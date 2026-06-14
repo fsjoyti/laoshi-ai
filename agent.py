@@ -13,6 +13,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
 from dictionary import lookup_word
+from hsk_selector import build_system_prompt
 from utils import to_pinyin
 
 load_dotenv()
@@ -25,31 +26,18 @@ warnings.filterwarnings(
     category=DeprecationWarning,
 )
 
-SYSTEM_PROMPT = """You are a patient, encouraging Chinese language tutor for English speakers.
-
-Teaching style:
-- Mix clear English explanations with Chinese examples in every reply.
-- Correct mistakes gently and explain grammar in plain English.
-- When the student asks "how do I say X" (or similar), give a word-by-word breakdown.
-
-Strict formatting rule:
-- Every Chinese character or word you output MUST include tone-marked pinyin immediately after it in this exact format: 你好 (nǐ hǎo).
-- Apply this to examples, corrections, vocabulary, and practice sentences — no exceptions.
-
-Tools:
-- Use `to_pinyin` when you need verified pronunciation.
-- Use `lookup_word` for dictionary definitions instead of inventing translations.
-
-Keep responses focused, practical, and supportive. Celebrate progress and suggest one small next step when helpful."""
-
 TOOLS = [to_pinyin, lookup_word]
 
+# Export a default SYSTEM_PROMPT for backward compatibility with tests.
+SYSTEM_PROMPT = build_system_prompt(None)
 
-def build_agent_executor() -> AgentExecutor:
+
+def build_agent_executor(hsk_level: str | None = None) -> AgentExecutor:
     """
     Create a fresh AgentExecutor with conversational memory.
 
     Call once per chat session so each user keeps an isolated history.
+    The optional `hsk_level` adjusts the system prompt to match learner level.
     """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or api_key == "sk-your-key-here":
@@ -68,9 +56,12 @@ def build_agent_executor() -> AgentExecutor:
         return_messages=True,
     )
 
+    # Compose the final system prompt, possibly augmented for HSK level.
+    system_prompt = build_system_prompt(hsk_level)
+
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", SYSTEM_PROMPT),
+            ("system", system_prompt),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
