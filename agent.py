@@ -13,6 +13,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
 from dictionary import lookup_word
+from hsk_selector import build_system_prompt
 from utils import to_pinyin
 
 load_dotenv()
@@ -25,13 +26,10 @@ warnings.filterwarnings(
     category=DeprecationWarning,
 )
 
-from hsk_selector import build_system_prompt
-
-# SYSTEM_PROMPT is now composed by hsk_selector.build_system_prompt so tests
-# can import the lightweight helper without pulling heavy dependencies.
-
-
 TOOLS = [to_pinyin, lookup_word]
+
+# Export a default SYSTEM_PROMPT for backward compatibility with tests.
+SYSTEM_PROMPT = build_system_prompt(None)
 
 
 def build_agent_executor(hsk_level: str | None = None) -> AgentExecutor:

@@ -43,10 +43,15 @@ async def on_message(message: cl.Message) -> None:
             cl.user_session.set("hsk_level", level)
             # force rebuild of the agent so the new prompt takes effect
             cl.user_session.set("agent_executor", None)
-            await cl.Message(content=f"HSK level set to {level}. Rebuilding session...").send()
+            msg = f"HSK level set to {level}. Rebuilding session..."
+            await cl.Message(content=msg).send()
             return
         else:
-            await cl.Message(content="Unknown level. Use 'level: beginner' or 'level: intermediate'.").send()
+            await cl.Message(
+                content=(
+                    "Unknown level. Use 'level: beginner' or 'level: intermediate'."
+                )
+            ).send()
             return
 
     agent_executor = cl.user_session.get("agent_executor")
