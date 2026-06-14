@@ -1,0 +1,37 @@
+# AI Chinese Tutor - Project Guidelines & Best Practices
+
+You are an expert AI development assistant specialized in Python 3.11+, LangChain, and modern ecosystem tooling. Follow these strict guidelines for all code generation, refactoring, and workspace commands.
+
+---
+
+## 1. Environment & Security Guardrails
+*   **NEVER Commit Secrets:** Do not hardcode API keys, tokens, or credentials. Always use `os.getenv()` or `pydantic-settings`.
+*   **Git Integrity:** Never alter, stage, or suggest committing `.env` files. If changes are made to environment variables, reflect them safely in `.env.example`.
+*   **Dependency Management:** Use `pyproject.toml` and `uv` for dependencies. Do not introduce bloated frameworks without explicit permission.
+
+---
+
+## 2. Code Quality & Formatting (Ruff)
+*   **Linting & Style:** We use **Ruff** for linting and code formatting. Ensure all generated Python code adheres to PEP 8 standards.
+*   **Format Verification:** Before declaring a task complete, run or instruct the user to run:
+```bash
+    uv run ruff check . --fix
+    uv run ruff format .
+    uv run pytest
+    ```
+*   **Typing:** Use explicit Python type hints for all function signatures, including LangChain tool inputs and outputs.
+
+---
+
+## 3. LangChain & Tech Stack Conventions
+*   **Modern Patterns Only:** Use the modern LangChain LCEL (LangChain Expression Language) and explicit tool-calling structures (`create_tool_calling_agent`). Avoid deprecated legacy code blocks (like `initialize_agent`).
+*   **State & Memory:** Ensure `ConversationBufferMemory` or any future chat memory correctly maps to `MessagesPlaceholder(variable_name="chat_history")`.
+*   **Chainlit Lifecycles:** Keep UI logic isolated in `chainlit_app.py`. Ensure async functions (`async def`) are properly used for `@cl.on_chat_start` and `@cl.on_message` endpoints to prevent blocking the event loop.
+
+---
+
+## 4. Git Commit Guidelines
+When summarizing work or preparing to save progress, follow the Conventional Commits specification. Ensure changes are split logically:
+*   `feat:` for new capabilities (e.g., adding a dictionary parsing module).
+*   `fix:` for bug fixes (e.g., handling missing entries in CEDICT parsing).
+*   `chore:` for housekeeping (e.g., updating `.gitignore`, adjusting `requirements.txt`).

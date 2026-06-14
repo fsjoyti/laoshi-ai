@@ -151,6 +151,9 @@ activemq-data/
 .env
 .envrc
 .venv
+
+# CC-CEDICT dictionary (download separately — see README)
+cedict_ts.u8
 env/
 venv/
 ENV/
