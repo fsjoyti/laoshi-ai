@@ -20,7 +20,9 @@ GREETING = (
 
 def _get_or_create_agent():
     """Build the agent synchronously (safe to run in a worker thread)."""
-    return build_agent_executor()
+    # Read the user's HSK level preference from the Chainlit session (if set)
+    hsk_level = cl.user_session.get("hsk_level")
+    return build_agent_executor(hsk_level=hsk_level)
 
 
 @cl.on_chat_start
@@ -32,6 +34,21 @@ async def on_chat_start() -> None:
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
     """Route the user's message through the LangChain agent."""
+    # allow the user to set their HSK level by sending messages like:
+    #  "level: beginner"  or  "level: intermediate"
+    txt_lower = (message.content or "").strip().lower()
+    if txt_lower.startswith("level:"):
+        level = txt_lower.split(":", 1)[1].strip()
+        if level in ("beginner", "intermediate"):
+            cl.user_session.set("hsk_level", level)
+            # force rebuild of the agent so the new prompt takes effect
+            cl.user_session.set("agent_executor", None)
+            await cl.Message(content=f"HSK level set to {level}. Rebuilding session...").send()
+            return
+        else:
+            await cl.Message(content="Unknown level. Use 'level: beginner' or 'level: intermediate'.").send()
+            return
+
     agent_executor = cl.user_session.get("agent_executor")
 
     if agent_executor is None:
