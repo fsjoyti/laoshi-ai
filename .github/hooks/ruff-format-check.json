@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "ruff-format-check",
+  "description": "Auto-run ruff format and check before tool use to catch linting errors early and prevent CI failures",
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "conditions": {
+        "toolNames": ["powershell", "bash"]
+      },
+      "actions": [
+        {
+          "type": "shell",
+          "command": "uv run ruff check . --fix && uv run ruff format . && echo 'Ruff: OK'",
+          "failureMode": "warn",
+          "description": "Format and lint code with ruff before running tools"
+        }
+      ]
+    }
+  ]
+}
