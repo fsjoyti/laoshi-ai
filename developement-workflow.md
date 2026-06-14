@@ -84,6 +84,7 @@ For every new capability or component (e.g., setting up the `AgentExecutor`, wir
 - GitHub Actions CI
 - Chainlit UX polish (removed internal "Thinking" step)
 - README troubleshooting guide
+- Docker deployment (`Dockerfile`, `docker-compose.yml`)
 
 ### 🔜 Sprint 2 — P1 (recommended next)
 | Story | Priority | Acceptance criteria |
@@ -91,7 +92,7 @@ For every new capability or component (e.g., setting up the `AgentExecutor`, wir
 | Streaming responses | P1 | Tutor reply streams token-by-token in Chainlit |
 | Migrate to `create_agent` + checkpointing | P1 | Replace deprecated `ConversationBufferMemory`; multi-turn memory still works |
 | HSK level selector | P1 | User picks beginner/intermediate; system prompt adapts |
-| Deployment (Docker) | P1 | `Dockerfile` + documented deploy to one cloud target |
+| Deployment (Docker) | P1 | `Dockerfile` + `docker-compose.yml`; documented deploy steps |
 
 ### 📋 Sprint 3+ — P2 (stretch)
 - User authentication (Chainlit OAuth)

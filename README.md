@@ -42,6 +42,56 @@ uv run chainlit run chainlit_app.py
 
 Open the URL shown in the terminal (usually `http://localhost:8000`).
 
+## Docker deployment
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- `.env` with `OPENAI_API_KEY` set (copy from `.env.example`)
+- `cedict_ts.u8` in the project root (see [Download CC-CEDICT](#download-cc-cedict-dictionary))
+
+### Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Open **http://localhost:8000**.
+
+Run detached:
+
+```bash
+docker compose up --build -d
+docker compose logs -f laoshi-ai
+```
+
+Stop:
+
+```bash
+docker compose down
+```
+
+### Run with Docker only
+
+```bash
+docker build -t laoshi-ai .
+docker run --rm -p 8000:8000 \
+  --env-file .env \
+  -v "$(pwd)/cedict_ts.u8:/app/cedict_ts.u8:ro" \
+  laoshi-ai
+```
+
+On Windows PowerShell, use `${PWD}` instead of `$(pwd)`.
+
+### Cloud deploy notes
+
+The container listens on `0.0.0.0:8000`. For platforms like **Railway**, **Fly.io**, or **Render**:
+
+1. Build from this `Dockerfile`
+2. Set `OPENAI_API_KEY` as a secret/env var
+3. Provide `cedict_ts.u8` via a volume, init step, or baked into the image for your environment
+4. Expose port **8000**
+
 ## Development
 
 ```bash
@@ -124,4 +174,6 @@ The **Readme** screen is Chainlit's landing page. Click **New Chat** (top left) 
 | `utils.py` | `to_pinyin` tool (pypinyin) |
 | `dictionary.py` | CC-CEDICT parser and `lookup_word` tool |
 | `chainlit_app.py` | Chat UI |
+| `Dockerfile` | Container image for deployment |
+| `docker-compose.yml` | Local Docker run with env + dictionary mount |
 | `tests/` | Unit tests (dictionary, pinyin, agent wiring) |

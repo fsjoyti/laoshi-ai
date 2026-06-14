@@ -1,0 +1,20 @@
+.git
+.github
+.venv
+.env
+.env.*
+!.env.example
+
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Large dictionary — mount at runtime (see docker-compose.yml)
+cedict_ts.u8
+
+# Docs and local-only files
+initial_implementation.md
+developement-workflow.md
+.cursorrules

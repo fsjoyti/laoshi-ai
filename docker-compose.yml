@@ -1,0 +1,13 @@
+services:
+  laoshi-ai:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      CEDICT_PATH: /app/cedict_ts.u8
+    volumes:
+      # Download cedict_ts.u8 locally first (see README)
+      - ./cedict_ts.u8:/app/cedict_ts.u8:ro
+    restart: unless-stopped
