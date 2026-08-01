@@ -86,15 +86,15 @@ For every new capability or component (e.g., setting up the `AgentExecutor`, wir
 - README troubleshooting guide
 - Docker deployment (`Dockerfile`, `docker-compose.yml`)
 
-### 🔜 Sprint 2 — P1 (recommended next)
+### ✅ Completed — Sprint 2 (UX & agent modernization)
 | Story | Priority | Acceptance criteria |
 |-------|----------|---------------------|
-| Streaming responses | P1 | Tutor reply streams token-by-token in Chainlit |
-| Migrate to `create_agent` + checkpointing | P1 | Replace deprecated `ConversationBufferMemory`; multi-turn memory still works |
-| HSK level selector | P1 | User picks beginner/intermediate; system prompt adapts |
-| Deployment (Docker) | P1 | `Dockerfile` + `docker-compose.yml`; documented deploy steps |
+| Migrate to `create_agent` + checkpointing | P1 | ✅ `InMemorySaver` + per-session `thread_id`; multi-turn memory works |
+| Streaming responses | P1 | ✅ Tutor reply streams token-by-token via `astream(stream_mode="messages")` |
+| HSK level selector | P1 | ✅ `AskActionMessage` at chat start; `level: beginner/intermediate` fallback |
+| ~~Deployment (Docker)~~ | — | ✅ Done in Sprint 1 |
 
-### 📋 Sprint 3+ — P2 (stretch)
+### 🔜 Sprint 3 — P2 (stretch)
 - User authentication (Chainlit OAuth)
 - Session persistence across server restarts
 - Quiz / flashcard tool

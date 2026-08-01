@@ -2,7 +2,7 @@
 
 A text-based conversational Chinese tutor for English speakers, built with LangChain, OpenAI GPT-4o, and Chainlit.
 
-Uses `langchain-classic` for `create_tool_calling_agent`, `AgentExecutor`, and `ConversationBufferMemory` (the supported API on LangChain v1).
+Uses LangChain `create_agent` with `InMemorySaver` checkpointing for multi-turn memory.
 
 ## Prerequisites
 
@@ -159,7 +159,6 @@ These are normal and do not stop the app from running:
 - `Created default chainlit markdown file` — Chainlit auto-generated `chainlit.md`.
 - `Translated markdown file for en-US not found` — Falls back to `chainlit.md`.
 - `Missing custom logo` — Uses the default Chainlit logo.
-- `ConversationBufferMemory was deprecated` — Informational only; memory still works.
 
 ### Welcome page vs. chat
 

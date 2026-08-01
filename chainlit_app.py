@@ -2,10 +2,12 @@
 
 import asyncio
 import logging
+import uuid
 
 import chainlit as cl
+from langchain_core.messages import AIMessage, HumanMessage
 
-from agent import build_agent_executor
+from agent import build_agent
 
 logger = logging.getLogger(__name__)
 
@@ -17,49 +19,81 @@ GREETING = (
     "What would you like to learn today?"
 )
 
+HSK_ACTIONS = [
+    cl.Action(name="hsk_beginner", payload={"level": "beginner"}, label="Beginner"),
+    cl.Action(
+        name="hsk_intermediate", payload={"level": "intermediate"}, label="Intermediate"
+    ),
+    cl.Action(name="hsk_skip", payload={"level": ""}, label="No preference"),
+]
+
 
 def _get_or_create_agent():
     """Build the agent synchronously (safe to run in a worker thread)."""
-    # Read the user's HSK level preference from the Chainlit session (if set)
     hsk_level = cl.user_session.get("hsk_level")
-    return build_agent_executor(hsk_level=hsk_level)
+    return build_agent(hsk_level=hsk_level or None)
+
+
+def _agent_config() -> dict:
+    """Stable thread id for LangGraph checkpointing within this chat session."""
+    thread_id = cl.user_session.get("agent_thread_id")
+    if not thread_id:
+        thread_id = str(uuid.uuid4())
+        cl.user_session.set("agent_thread_id", thread_id)
+    return {"configurable": {"thread_id": thread_id}}
+
+
+async def _prompt_hsk_level() -> None:
+    """Ask the learner to pick an HSK level once per chat session."""
+    if cl.user_session.get("hsk_prompt_done"):
+        return
+
+    cl.user_session.set("hsk_prompt_done", True)
+    res = await cl.AskActionMessage(
+        content="Choose your level so I can tailor explanations:",
+        actions=HSK_ACTIONS,
+    ).send()
+
+    if res and res.get("payload", {}).get("level"):
+        level = res["payload"]["level"]
+        cl.user_session.set("hsk_level", level)
+        cl.user_session.set("agent", None)
+        await cl.Message(
+            content=f"Got it — I'll teach at **{level}** level. Ask me anything!"
+        ).send()
 
 
 @cl.on_chat_start
 async def on_chat_start() -> None:
-    """Greet the student immediately; build the agent on first message."""
+    """Greet the student and offer an HSK level picker."""
     await cl.Message(content=GREETING).send()
+    await _prompt_hsk_level()
 
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
-    """Route the user's message through the LangChain agent."""
-    # allow the user to set their HSK level by sending messages like:
-    #  "level: beginner"  or  "level: intermediate"
+    """Route the user's message through the LangChain agent with streaming."""
     txt_lower = (message.content or "").strip().lower()
     if txt_lower.startswith("level:"):
         level = txt_lower.split(":", 1)[1].strip()
         if level in ("beginner", "intermediate"):
             cl.user_session.set("hsk_level", level)
-            # force rebuild of the agent so the new prompt takes effect
-            cl.user_session.set("agent_executor", None)
-            msg = f"HSK level set to {level}. Rebuilding session..."
-            await cl.Message(content=msg).send()
-            return
-        else:
+            cl.user_session.set("agent", None)
             await cl.Message(
-                content=(
-                    "Unknown level. Use 'level: beginner' or 'level: intermediate'."
-                )
+                content=f"HSK level set to **{level}**. Starting fresh for this level."
             ).send()
             return
+        await cl.Message(
+            content="Unknown level. Use `level: beginner` or `level: intermediate`."
+        ).send()
+        return
 
-    agent_executor = cl.user_session.get("agent_executor")
+    agent = cl.user_session.get("agent")
 
-    if agent_executor is None:
+    if agent is None:
         try:
-            agent_executor = await asyncio.to_thread(_get_or_create_agent)
-            cl.user_session.set("agent_executor", agent_executor)
+            agent = await asyncio.to_thread(_get_or_create_agent)
+            cl.user_session.set("agent", agent)
         except ValueError as exc:
             await cl.Message(content=f"Configuration error: {exc}").send()
             return
@@ -73,21 +107,53 @@ async def on_message(message: cl.Message) -> None:
             ).send()
             return
 
+    response_msg = cl.Message(content="")
+    await response_msg.send()
+
+    input_state = {"messages": [HumanMessage(content=message.content)]}
+    config = _agent_config()
+    streamed_any = False
+
     try:
-        response = await asyncio.wait_for(
-            asyncio.to_thread(agent_executor.invoke, {"input": message.content}),
-            timeout=120,
-        )
-        output = (response.get("output") or "").strip()
-        if not output:
-            output = "I couldn't generate a response. Please try again."
-        await cl.Message(content=output).send()
+        async for msg, _metadata in agent.astream(
+            input_state,
+            config=config,
+            stream_mode="messages",
+        ):
+            if not isinstance(msg, AIMessage):
+                continue
+            chunk = msg.content
+            if isinstance(chunk, str) and chunk:
+                await response_msg.stream_token(chunk)
+                streamed_any = True
+            elif isinstance(chunk, list):
+                for part in chunk:
+                    text = part.get("text", "") if isinstance(part, dict) else str(part)
+                    if text:
+                        await response_msg.stream_token(text)
+                        streamed_any = True
+
+        if not streamed_any:
+            result = await asyncio.to_thread(agent.invoke, input_state, config)
+            messages = result.get("messages", [])
+            if messages and isinstance(messages[-1], AIMessage):
+                fallback = (messages[-1].content or "").strip()
+                if fallback:
+                    await response_msg.stream_token(fallback)
+                    streamed_any = True
+
+        if not streamed_any or not response_msg.content.strip():
+            response_msg.content = "I couldn't generate a response. Please try again."
+
+        await response_msg.update()
     except TimeoutError:
+        await response_msg.remove()
         await cl.Message(
             content="The tutor took too long to respond. Please try again."
         ).send()
     except Exception as exc:
-        logger.exception("Agent invoke failed")
+        logger.exception("Agent stream failed")
+        await response_msg.remove()
         await cl.Message(
             content=(
                 "Sorry, I couldn't reach the language model. "

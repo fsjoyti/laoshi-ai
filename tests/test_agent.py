@@ -3,8 +3,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from langgraph.graph.state import CompiledStateGraph
 
-from agent import SYSTEM_PROMPT, TOOLS, build_agent_executor
+from agent import SYSTEM_PROMPT, TOOLS, build_agent
 
 
 class TestAgentConfig:
@@ -22,21 +23,33 @@ class TestAgentConfig:
     ) -> None:
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         with pytest.raises(ValueError, match="OPENAI_API_KEY"):
-            build_agent_executor()
+            build_agent()
 
     def test_build_agent_raises_with_placeholder_key(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-your-key-here")
         with pytest.raises(ValueError, match="OPENAI_API_KEY"):
-            build_agent_executor()
+            build_agent()
 
     @patch("agent.ChatOpenAI")
-    def test_build_agent_wires_executor(
-        self, mock_chat_openai: MagicMock, monkeypatch: pytest.MonkeyPatch
+    @patch("agent.create_agent")
+    def test_build_agent_wires_graph_with_checkpointing(
+        self,
+        mock_create_agent: MagicMock,
+        mock_chat_openai: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
-        executor = build_agent_executor()
+        mock_graph = MagicMock(spec=CompiledStateGraph)
+        mock_create_agent.return_value = mock_graph
+
+        graph = build_agent(hsk_level="beginner")
+
         mock_chat_openai.assert_called_once()
-        assert len(executor.tools) == 2
-        assert executor.memory is not None
+        mock_create_agent.assert_called_once()
+        call_kwargs = mock_create_agent.call_args.kwargs
+        assert call_kwargs["tools"] == TOOLS
+        assert "HSK Level: beginner" in call_kwargs["system_prompt"]
+        assert call_kwargs["checkpointer"] is not None
+        assert graph is mock_graph
