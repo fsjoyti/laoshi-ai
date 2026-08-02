@@ -4,7 +4,6 @@ These tests are written TDD-style and mock external LLM dependencies where
 appropriate. They assert the required Markdown structure and option handling.
 """
 
-
 import pytest
 
 SAMPLE_TEXT = "你好，我叫王明。很高兴认识你。"
@@ -66,9 +65,9 @@ def test_pinyin_contains_tone_marks(monkeypatch: pytest.MonkeyPatch) -> None:
 
     output = breakdown_chinese_transcript("你好")
     # Check for at least one common tone-marked vowel
-    assert any(
-        t in output for t in ["ā", "á", "ǎ", "à", "ǐ", "ǒ"]
-    ), "No tone-marked vowels found in output"
+    assert any(t in output for t in ["ā", "á", "ǎ", "à", "ǐ", "ǒ"]), (
+        "No tone-marked vowels found in output"
+    )
 
 
 # TODO: Add polyphone resolution tests once the resolver API is finalized.
