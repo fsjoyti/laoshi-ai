@@ -184,3 +184,44 @@ The **Readme** screen is Chainlit's landing page. Click **New Chat** (top left) 
 | `Dockerfile` | Container image for deployment |
 | `docker-compose.yml` | Local Docker run with env + dictionary mount |
 | `tests/` | Unit tests (dictionary, pinyin, agent wiring) |
+
+## Transcript Breakdown Skill (usage)
+
+Programmatic usage (Python):
+
+```python
+from skills.transcript_breakdown import breakdown_chinese_transcript
+
+text = "你好，我叫王明。很高兴认识你。"
+output = breakdown_chinese_transcript(text)
+print(output)
+```
+
+Agent/Runtime usage
+
+- The skill is exposed as a StructuredTool `breakdown_chinese_transcript_tool` and is registered in `agent.py`.
+- When running the app (`uv run chainlit run chainlit_app.py`), the agent can invoke the tool from conversations or helper actions.
+
+Chainlit example (action calling the tool):
+
+```python
+from chainlit import on_message
+from skills.transcript_breakdown import breakdown_chinese_transcript
+
+@on_message
+async def handler(message):
+   result = breakdown_chinese_transcript(message.content)
+   await message.send(result)
+```
+
+Developer notes
+
+- Location: implementation is in `skills/transcript_breakdown.py` and uses `dictionary.py` (CC-CEDICT) and `utils.py` (`pypinyin`) for core functionality.
+- Polyphone handling: the repository contains a small heuristic resolver for a few common 多音字; extend or replace with an LLM/resolver for production accuracy.
+- Tests: see `tests/test_transcript_breakdown.py` for a starting QA skeleton. Run the full suite with:
+
+```bash
+uv run pytest
+```
+
+- To wire more advanced idiomatic translations, place an LLM chain in front of `breakdown_chinese_transcript` and keep the tool's output format stable for downstream UI.

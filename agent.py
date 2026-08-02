@@ -13,11 +13,12 @@ except ImportError:  # pragma: no cover - compatibility fallback
 from config import get_checkpoint_path, get_openai_api_key
 from dictionary import lookup_word
 from hsk_selector import build_system_prompt
+from skills.transcript_breakdown import breakdown_chinese_transcript_tool
 from utils import to_pinyin
 
 truststore.inject_into_ssl()
 
-TOOLS = [to_pinyin, lookup_word]
+TOOLS = [to_pinyin, lookup_word, breakdown_chinese_transcript_tool]
 
 # Export a default SYSTEM_PROMPT for backward compatibility with tests.
 SYSTEM_PROMPT = build_system_prompt(None)

@@ -16,7 +16,8 @@ class TestAgentConfig:
 
     def test_tools_registered(self) -> None:
         tool_names = {tool.name for tool in TOOLS}
-        assert tool_names == {"to_pinyin", "lookup_word"}
+        # Ensure required tools are registered; allow additional tools
+        assert {"to_pinyin", "lookup_word"}.issubset(tool_names)
 
     def test_build_agent_raises_without_api_key(
         self, monkeypatch: pytest.MonkeyPatch

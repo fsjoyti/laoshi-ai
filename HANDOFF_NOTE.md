@@ -93,9 +93,16 @@ Cross-cutting
 
 Next Steps / Handoff
 -------------------
-- PM sign-off on P0 scope (Memory Migration + Streaming) required before QA writes tests.
-- QA persona to draft pytest cases (with mocks) for each Acceptance Criteria.
-- SWE persona to implement P0 items in a single PR per the project's four-persona workflow.
+- PM sign-off on P0 scope (Memory Migration + Streaming) required before additional P1 work.
+- Progress update: `transcript_breakdown_and_pinyin` tool implemented, registered in the agent, unit test skeleton added, and README/docs updated. Full test suite passes locally.
+- Immediate next tasks (recommended):
+  - Add a Chainlit UI action/example that calls `breakdown_chinese_transcript_tool` and streams results to the chat UI.
+  - Expand QA tests: add polyphone disambiguation cases, HSK-based vocab selection assertions, and integration tests that mock LLMs for idiomatic translations.
+  - Tech Lead security review: confirm no secrets in repo, validate input sanitization, and review CC-CEDICT usage/licensing and file path handling.
+  - Documentation: finalize `new_feature.md` and `README.md` usage examples, and add a short developer note about replacing heuristic polyphone logic with an LLM resolver if needed.
+  - Optional stretch: design STT/pronunciation feedback API (upload, async scoring job, and result schema) and add acceptance criteria for a prototype.
+  
+- Handoff process: QA to author failing tests for any gaps found; SWE to implement fixes in small PRs; TL to approve security and architectural choices before merge.
 
 Attachments / Notes
 -------------------
