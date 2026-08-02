@@ -63,11 +63,37 @@ async def _prompt_hsk_level() -> None:
         ).send()
 
 
+async def _prompt_tools() -> None:
+    """Offer a simple tools menu (visible button) so users notice available actions."""
+    if cl.user_session.get("tools_prompt_done"):
+        return
+
+    cl.user_session.set("tools_prompt_done", True)
+    tools_actions = [
+        cl.Action(name="open_tools", payload={}, label="Open tools"),
+    ]
+
+    res = await cl.AskActionMessage(
+        content="Try built-in tools (e.g. Transcript breakdown). Click 'Open tools' for usage info.",
+        actions=tools_actions,
+    ).send()
+
+    # If the user clicked the tools button, provide a quick usage hint.
+    if res:
+        await cl.Message(
+            content=(
+                "Transcript breakdown: paste or type a Chinese passage prefixed with `breakdown:`\n"
+                "Example: `breakdown: 你好，我叫李雷。`"
+            )
+        ).send()
+
+
 @cl.on_chat_start
 async def on_chat_start() -> None:
     """Greet the student and offer an HSK level picker."""
     await cl.Message(content=GREETING).send()
     await _prompt_hsk_level()
+    await _prompt_tools()
 
 
 @cl.on_message
@@ -86,6 +112,25 @@ async def on_message(message: cl.Message) -> None:
         await cl.Message(
             content="Unknown level. Use `level: beginner` or `level: intermediate`."
         ).send()
+        return
+
+    if txt_lower.startswith("breakdown:"):
+        # Extract text after the prefix and call the breakdown tool synchronously.
+        raw = message.content.split(":", 1)[1].strip()
+        if not raw:
+            await cl.Message(content="Please provide text after `breakdown:`").send()
+            return
+
+        try:
+            # import at call-time to ensure the symbol is available in the
+            # running Chainlit process (avoids 'name not defined' errors).
+            from skills.transcript_breakdown import breakdown_chinese_transcript
+
+            result = await asyncio.to_thread(breakdown_chinese_transcript, raw)
+            await cl.Message(content=result).send()
+        except Exception as exc:
+            logger.exception("Transcript breakdown failed")
+            await cl.Message(content=f"Transcript breakdown error: {exc}").send()
         return
 
     agent = cl.user_session.get("agent")
