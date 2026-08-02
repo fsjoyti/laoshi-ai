@@ -4,7 +4,6 @@ These tests are written TDD-style and mock external LLM dependencies where
 appropriate. They assert the required Markdown structure and option handling.
 """
 
-from typing import Any
 
 import pytest
 
@@ -20,9 +19,13 @@ def _looks_like_markdown_breakdown(output: str) -> bool:
 
 
 def test_breakdown_returns_markdown_structure(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The tool should return a markdown-formatted breakdown containing required sections."""
-    # Import the tool under test. Implementations should expose
-    # `breakdown_chinese_transcript(transcript_text, granularity='sentence', include_vocab_notes=True)`
+    """The tool should return a markdown-formatted breakdown.
+
+    The output must contain the required sections for each chunk.
+    """
+    # Import the tool under test. Implementations should expose the
+    # `breakdown_chinese_transcript(transcript_text, granularity='sentence',`
+    # `include_vocab_notes=True`) signature.
     try:
         from skills.transcript_breakdown import (
             breakdown_chinese_transcript,  # type: ignore

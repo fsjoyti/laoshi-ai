@@ -27,7 +27,11 @@ def get_cedict_path() -> Path:
 
 
 def get_checkpoint_path() -> Path:
-    """Resolve the LangGraph checkpoint database path from the environment or the project root."""
+    """Resolve the LangGraph checkpoint database path.
+
+    Reads `CHECKPOINT_DB_PATH` from the environment or falls back to a
+    `checkpoints.sqlite` file in the project root.
+    """
     env_path = os.getenv("CHECKPOINT_DB_PATH", "").strip()
     if env_path:
         return Path(env_path).expanduser().resolve()

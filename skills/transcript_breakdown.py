@@ -12,7 +12,7 @@ from typing import List
 from langchain_core.tools import tool
 from pypinyin import Style, pinyin
 
-from dictionary import format_lookup_results, get_cedict
+from dictionary import get_cedict
 from utils import chinese_to_pinyin
 
 _SENTENCE_SPLIT_RE = re.compile(r"([^。！？\n]+[。！？]?)")
@@ -105,10 +105,10 @@ def _extract_vocab_candidates(chunk: str, max_items: int = 3) -> List[str]:
     n = len(chunk)
     for i in range(n):
         # try longer words first
-        for L in (4, 3, 2, 1):
-            if i + L > n:
+        for length in (4, 3, 2, 1):
+            if i + length > n:
                 continue
-            candidate = chunk[i : i + L]
+            candidate = chunk[i : i + length]
             if candidate in seen or not candidate.strip():
                 continue
             entries = cedict.lookup(candidate)
