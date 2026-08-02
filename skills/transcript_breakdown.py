@@ -99,7 +99,11 @@ def _extract_vocab_candidates(chunk: str, max_items: int = 3) -> List[str]:
 
     Simple greedy scan: try substrings of length 4..2 then 1.
     """
-    cedict = get_cedict()
+    try:
+        cedict = get_cedict()
+    except FileNotFoundError:
+        # CC-CEDICT not available (CI or minimal environment) — skip vocab.
+        return []
     seen: set[str] = set()
     results: List[str] = []
     n = len(chunk)
@@ -149,9 +153,14 @@ def breakdown_chinese_transcript(
         # definitions for each extracted vocab item; this is NOT a substitute for
         # an LLM translation but suffices for structure and offline tests.
         vocab_candidates = _extract_vocab_candidates(chunk, max_items=4)
-        cedict = get_cedict()
+        try:
+            cedict = get_cedict()
+        except FileNotFoundError:
+            cedict = None
         translation_parts: List[str] = []
         for word in vocab_candidates:
+            if cedict is None:
+                break
             entries = cedict.lookup(word)
             if entries:
                 # take the first definition from the first entry
@@ -165,7 +174,7 @@ def breakdown_chinese_transcript(
         translation_block = f"**Translation:**\n{translation}"
 
         vocab_lines: List[str] = []
-        if include_vocab_notes and vocab_candidates:
+        if include_vocab_notes and vocab_candidates and cedict is not None:
             for word in vocab_candidates[:4]:
                 entries = cedict.lookup(word)
                 if entries:
