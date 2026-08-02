@@ -65,9 +65,9 @@ def test_pinyin_contains_tone_marks(monkeypatch: pytest.MonkeyPatch) -> None:
 
     output = breakdown_chinese_transcript("你好")
     # Check for at least one common tone-marked vowel
-    assert any(
-        t in output for t in ["ā", "á", "ǎ", "à", "ǐ", "ǒ"]
-    ), "No tone-marked vowels found in output"
+    assert any(t in output for t in ["ā", "á", "ǎ", "à", "ǐ", "ǒ"]), (
+        "No tone-marked vowels found in output"
+    )
 
 
 # TODO: Add polyphone resolution tests once the resolver API is finalized.
