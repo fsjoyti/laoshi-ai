@@ -1,14 +1,12 @@
 """CC-CEDICT parser and dictionary lookup for the Chinese tutor agent."""
 
-import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import load_dotenv
 from langchain_core.tools import tool
 
-load_dotenv()
+from config import get_cedict_path
 
 # CC-CEDICT line format: Traditional Simplified [pinyin] /definition1/definition2/
 _CEDICT_LINE_PATTERN = re.compile(r"^(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+(.+)$")
@@ -83,10 +81,7 @@ class CEDict:
 
 
 def _default_cedict_path() -> Path:
-    env_path = os.getenv("CEDICT_PATH")
-    if env_path:
-        return Path(env_path)
-    return Path(__file__).resolve().parent / "cedict_ts.u8"
+    return get_cedict_path()
 
 
 _cedict: CEDict | None = None

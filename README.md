@@ -34,6 +34,14 @@ The tutor uses the offline **CC-CEDICT** file for accurate word lookups.
    CEDICT_PATH=path/to/cedict_ts.u8
    ```
 
+## Durable chat sessions
+
+The app now stores conversation checkpoints in a local SQLite database so the same thread can resume after a restart when the same chat session is reused. You can override the default location in `.env`:
+
+```env
+CHECKPOINT_DB_PATH=checkpoints.sqlite
+```
+
 ## Run the app
 
 ```bash

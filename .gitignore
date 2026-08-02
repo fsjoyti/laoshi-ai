@@ -152,6 +152,10 @@ activemq-data/
 .envrc
 .venv
 
+# Local persistence
+*.sqlite
+*.sqlite3
+
 # CC-CEDICT dictionary (download separately — see README)
 cedict_ts.u8
 env/

@@ -53,3 +53,21 @@ class TestAgentConfig:
         assert "HSK Level: beginner" in call_kwargs["system_prompt"]
         assert call_kwargs["checkpointer"] is not None
         assert graph is mock_graph
+
+    @patch("agent.ChatOpenAI")
+    @patch("agent.create_agent")
+    def test_build_agent_uses_sqlite_checkpointer(
+        self,
+        mock_create_agent: MagicMock,
+        mock_chat_openai: MagicMock,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
+        mock_graph = MagicMock(spec=CompiledStateGraph)
+        mock_create_agent.return_value = mock_graph
+
+        build_agent()
+
+        checkpointer = mock_create_agent.call_args.kwargs["checkpointer"]
+        assert checkpointer is not None
+        assert hasattr(checkpointer, "put")
