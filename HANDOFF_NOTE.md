@@ -109,4 +109,17 @@ Attachments / Notes
 - Migration script should include a dry-run mode and a reversible plan.
 - Keep changes backwards-compatible for a transition window.
 
+PR Summary
+----------
+- Implemented `skills/transcript_breakdown.py` with optional `jieba` word segmentation, token-aware tone-marked pinyin output, and a safe optional LLM translation helper.
+- Wired a `breakdown:` command into `chainlit_app.py` using a call-time import and threaded execution for the transcript breakdown tool.
+- Existing tests pass locally: `29 passed`.
+- Current runtime output still uses the dictionary fallback translation; the LLM helper is present but not yet integrated into the public tool output.
+
+Recommended follow-up tasks
+---------------------------
+- Wire `_llm_translate` into `breakdown_chinese_transcript` and expose a `use_llm` flag.
+- Add QA tests for tokenized pinyin formatting, polyphone disambiguation, and LLM-mocked translation fallback.
+- Update `README.md` with `breakdown:` usage examples and any new dependency notes for `jieba` / optional OpenAI integration.
+
 -- End of Handoff --

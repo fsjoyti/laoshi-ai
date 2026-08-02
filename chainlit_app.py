@@ -74,7 +74,10 @@ async def _prompt_tools() -> None:
     ]
 
     res = await cl.AskActionMessage(
-        content="Try built-in tools (e.g. Transcript breakdown). Click 'Open tools' for usage info.",
+        content=(
+            "Try built-in tools (e.g. Transcript breakdown). "
+            "Click 'Open tools' for usage info."
+        ),
         actions=tools_actions,
     ).send()
 
@@ -82,7 +85,8 @@ async def _prompt_tools() -> None:
     if res:
         await cl.Message(
             content=(
-                "Transcript breakdown: paste or type a Chinese passage prefixed with `breakdown:`\n"
+                "Transcript breakdown: paste or type a Chinese passage prefixed with "
+                "`breakdown:`\n"
                 "Example: `breakdown: 你好，我叫李雷。`"
             )
         ).send()

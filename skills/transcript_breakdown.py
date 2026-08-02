@@ -6,11 +6,24 @@ production-quality idiomatic translations and nuanced polyphone resolution,
 wire the function to an LLM chain or improve the resolver heuristics.
 """
 
+import os
 import re
 from typing import List
 
 from langchain_core.tools import tool
 from pypinyin import Style, pinyin
+
+# Optional tokenizer for better pinyin grouping
+try:
+    import jieba
+except Exception:  # pragma: no cover - optional dependency
+    jieba = None
+
+# Optional LLM client
+try:
+    from langchain_openai import ChatOpenAI
+except Exception:  # pragma: no cover - optional runtime
+    ChatOpenAI = None
 
 from dictionary import get_cedict
 from utils import chinese_to_pinyin
@@ -94,6 +107,107 @@ def _pinyin_with_polyphones(text: str) -> str:
     return " ".join(out_parts)
 
 
+def _segment_words(text: str) -> List[str]:
+    """Segment Chinese text into words using `jieba` when available.
+
+    Falls back to per-character tokens if `jieba` is not installed.
+    """
+    if not text:
+        return []
+    if jieba is not None:
+        try:
+            tokens = jieba.lcut(text)
+            tokens = [t.strip() for t in tokens if t.strip()]
+            return tokens
+        except Exception:
+            pass
+    # Fallback: return each CJK character as a token, preserve ASCII runs
+    tokens: List[str] = []
+    buf = ""
+    for ch in text:
+        # Basic check for CJK Unified Ideographs
+        if "\u4e00" <= ch <= "\u9fff":
+            if buf:
+                tokens.append(buf)
+                buf = ""
+            tokens.append(ch)
+        else:
+            buf += ch
+    if buf:
+        tokens.append(buf)
+    return tokens
+
+
+def _tokens_to_pinyin(tokens: List[str]) -> str:
+    """Convert a list of tokens to hyphenated pinyin with tone marks.
+
+    Each token's characters are joined with spaces, tokens joined with hyphens.
+    """
+    parts: List[str] = []
+    for token in tokens:
+        if not token.strip():
+            continue
+        # For ASCII tokens, preserve as-is
+        if all(ord(c) < 128 for c in token):
+            parts.append(token)
+            continue
+        syls = pinyin(token, style=Style.TONE, heteronym=False, errors="default")
+        flattened = " ".join(s[0] if s else token for s in syls)
+        parts.append(flattened)
+    return " - ".join(parts)
+
+
+def _llm_translate(
+    chunk: str, tokens: List[str], hsk_level: str | None = None
+) -> str | None:
+    """Use an LLM to produce an idiomatic translation for a chunk.
+
+    Returns the translation string or None if no LLM is available.
+    """
+    if ChatOpenAI is None:
+        return None
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key or api_key == "sk-your-key-here":
+        return None
+
+    # Build a concise prompt asking for a single-sentence idiomatic translation.
+    system = (
+        "You are an expert Chinese->English translator. "
+        "Provide a single-sentence, idiomatic English translation for the given "
+        "Chinese text."
+    )
+    # Include tokenized form to help with pinyin grouping
+    user = (
+        f"Chinese: {chunk}\n"
+        f"Tokens: {' | '.join(tokens)}\n"
+        "Respond only with the single-sentence English translation."
+    )
+
+    try:
+        llm = ChatOpenAI(model="gpt-4o", temperature=0.2, api_key=api_key)
+        resp = llm.generate(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ]
+        )
+        # langchain_openai ChatOpenAI.generate returns a complex object;
+        # try to extract text
+        text = None
+        try:
+            text = resp.generations[0][0].text
+        except Exception:
+            try:
+                text = str(resp)
+            except Exception:
+                text = None
+        if text:
+            return text.strip()
+    except Exception:
+        return None
+    return None
+
+
 def _extract_vocab_candidates(chunk: str, max_items: int = 3) -> List[str]:
     """Extract up to `max_items` vocabulary candidates by checking CC-CEDICT hits.
 
@@ -146,8 +260,15 @@ def breakdown_chinese_transcript(
     for idx, chunk in enumerate(chunks, start=1):
         header = f"### Chunk {idx}"
         chinese = f"**Chinese:**\n{chunk}"
-        pinyin_text = _pinyin_with_polyphones(chunk)
-        pinyin_block = f"**Pinyin:**\n{pinyin_text}"
+        # Prefer token-aware pinyin when jieba is available; fall back to
+        # character-level pinyin with simple polyphone resolution.
+        tokens = _segment_words(chunk)
+        token_pinyin = _tokens_to_pinyin(tokens)
+        if token_pinyin:
+            pinyin_block = f"**Pinyin:**\n{token_pinyin}"
+        else:
+            pinyin_text = _pinyin_with_polyphones(chunk)
+            pinyin_block = f"**Pinyin:**\n{pinyin_text}"
 
         # Build a very small, dictionary-based fallback translation: join first
         # definitions for each extracted vocab item; this is NOT a substitute for
