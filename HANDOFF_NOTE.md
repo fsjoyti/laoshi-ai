@@ -10,16 +10,16 @@ This handoff bundles the prioritized Kanban backlog and formal user stories for 
 Kanban Board
 ------------
 - Todo (Not Started)
-  - Memory migration to agent/checkpointed history
-  - Token streaming into Chainlit UI
   - Multi-user auth + role model
   - Session persistence across restarts (DB-backed)
-  - HSK-level learning modes
   - Interactive quiz tool
   - Pronunciation feedback (STT + scoring)
 - In Progress
   - None (planning phase)
-- Done (MVP grounding)
+- Done (Implemented)
+  - Memory migration to agent/checkpointed history
+  - Token streaming into Chainlit UI
+  - HSK-level learning modes
   - `chainlit_app.py` — basic chat UI + single-user MVP
   - `README.md` — setup & run instructions
   - `pyproject.toml` / `requirements.txt` — pinned deps
@@ -27,33 +27,6 @@ Kanban Board
 
 Prioritized User Stories
 ------------------------
-P0: Critical Architecture & UX Fixes
-
-1) Memory Migration — Replace ConversationBufferMemory
-- As a developer, I want to migrate off ConversationBufferMemory to an agent + checkpointed history so that the app stays compatible with LangChain 2.0 and conversation context is durable.
-- Technical Considerations:
-  - Investigate `create_tool_calling_agent` / LangChain agent patterns and LangGraph options.
-  - Use DB-backed message history (e.g., LangChain ChatMessageHistory backed by Postgres) or LangChain checkpoints API.
-  - Schema: session_id, message_id, role, text, tokens, metadata, timestamp.
-  - Provide migration script to export existing ConversationBufferMemory.
-- Acceptance Criteria:
-  - No remaining use of `ConversationBufferMemory` in the codebase.
-  - Message history persists to DB and can be rehydrated by session_id.
-  - Migration script converts existing histories with timestamp fidelity.
-  - Unit tests mock LangChain history and verify rehydrate/load flows.
-
-2) Streaming Responses into Chainlit UI
-- As a learner, I want tokens to appear as the model generates them so I receive near-instant feedback and improved UX.
-- Technical Considerations:
-  - Use LLM streaming callbacks (LangChain callbacks or OpenAI streaming client) integrated with Chainlit `@cl.on_message` streaming handlers.
-  - Implement partial-message buffering, UI append semantics, and cancellation handling.
-  - Ensure backpressure and ordering.
-- Acceptance Criteria:
-  - First token visible within 500ms of stream start in test harness.
-  - UI progressively appends tokens; final assembled message matches model output.
-  - Cancellation halts generation cleanly and marks partial response.
-  - Tests mock streaming LLM and assert callback invocation order and partial-update events.
-
 P1: Security & Persistence
 
 3) Multi-User Authentication (OAuth / Chainlit)
@@ -87,16 +60,6 @@ P1: Security & Persistence
   - README documents secret setup.
 
 P2: Feature Enhancements (Pedagogy & Tools)
-
-6) HSK-Level Modes
-- As a learner, I want to select an HSK level so content matches my proficiency.
-- Technical Considerations:
-  - Prompt templates per HSK level with system message injection.
-  - Persist user preference per account.
-- Acceptance Criteria:
-  - UI exposes HSK1..HSK6 options.
-  - Generated content respects vocabulary/grammar constraints (validated by unit tests on prompt templates).
-  - Preference persists across sessions.
 
 7) Interactive Quiz Tool
 - As a teacher, I want to generate interactive quizzes so learners practice with instant feedback.
