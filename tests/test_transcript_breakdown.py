@@ -70,4 +70,27 @@ def test_pinyin_contains_tone_marks(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def test_use_llm_flag_uses_mocked_translation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """When use_llm is True, the helper should prefer an LLM translation."""
+    try:
+        import skills.transcript_breakdown as transcript_breakdown  # type: ignore
+    except Exception:
+        pytest.skip("transcript_breakdown tool not implemented")
+
+    calls: list[tuple[str, list[str], str | None]] = []
+
+    def fake_llm_translate(
+        chunk: str, tokens: list[str], hsk_level: str | None = None
+    ) -> str:
+        calls.append((chunk, tokens, hsk_level))
+        return "A mocked translation"
+
+    monkeypatch.setattr(transcript_breakdown, "_llm_translate", fake_llm_translate)
+
+    output = transcript_breakdown.breakdown_chinese_transcript("你好", use_llm=True)
+
+    assert "A mocked translation" in output
+    assert calls
+
+
 # TODO: Add polyphone resolution tests once the resolver API is finalized.

@@ -244,13 +244,14 @@ def breakdown_chinese_transcript(
     transcript_text: str,
     granularity: str = "sentence",
     include_vocab_notes: bool = True,
+    use_llm: bool = False,
 ) -> str:
     """Break down `transcript_text` into annotated Markdown chunks.
 
     This MVP implementation produces tone-marked pinyin, a placeholder
     literal-ish translation built from dictionary hits, and simple vocab
-    bullets using CC-CEDICT lookups. For idiomatic translations, wire an
-    LLM-based chain in front of this tool.
+    bullets using CC-CEDICT lookups. When `use_llm=True`, it will prefer an
+    LLM-based translation when one is available.
     """
     chunks = _segment_text(transcript_text, granularity=granularity)
     if not chunks:
@@ -278,20 +279,24 @@ def breakdown_chinese_transcript(
             cedict = get_cedict()
         except FileNotFoundError:
             cedict = None
-        translation_parts: List[str] = []
-        for word in vocab_candidates:
-            if cedict is None:
-                break
-            entries = cedict.lookup(word)
-            if entries:
-                # take the first definition from the first entry
-                translation_parts.append(entries[0].definitions[0])
+        translation = "(translation unavailable)"
+        if use_llm:
+            llm_translation = _llm_translate(chunk, tokens)
+            if llm_translation:
+                translation = llm_translation
+        if translation == "(translation unavailable)":
+            translation_parts: List[str] = []
+            for word in vocab_candidates:
+                if cedict is None:
+                    break
+                entries = cedict.lookup(word)
+                if entries:
+                    # take the first definition from the first entry
+                    translation_parts.append(entries[0].definitions[0])
 
-        translation = (
-            "; ".join(translation_parts)
-            if translation_parts
-            else "(translation unavailable)"
-        )
+            if translation_parts:
+                translation = "; ".join(translation_parts)
+
         translation_block = f"**Translation:**\n{translation}"
 
         vocab_lines: List[str] = []
