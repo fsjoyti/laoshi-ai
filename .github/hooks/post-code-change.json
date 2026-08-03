@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "name": "post-code-change",
+  "description": "After any code change, auto-run ruff lint, format, and pytest to catch regressions immediately",
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "conditions": {
+        "toolNames": [
+          "replace_string_in_file",
+          "insert_edit_into_file",
+          "create_file",
+          "edit_notebook_file"
+        ]
+      },
+      "actions": [
+        {
+          "type": "shell",
+          "command": "uv run ruff check . --fix",
+          "failureMode": "warn",
+          "description": "Lint with ruff after code changes"
+        },
+        {
+          "type": "shell",
+          "command": "uv run ruff format .",
+          "failureMode": "warn",
+          "description": "Format with ruff after code changes"
+        },
+        {
+          "type": "shell",
+          "command": "uv run pytest -q",
+          "failureMode": "warn",
+          "description": "Run test suite after code changes"
+        }
+      ]
+    }
+  ]
+}
