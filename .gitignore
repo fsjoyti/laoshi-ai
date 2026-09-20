@@ -5,7 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
-
+sgg.txt
+ss.txt
+.vscode/
 # Distribution / packaging
 .Python
 build/

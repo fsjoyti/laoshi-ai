@@ -130,7 +130,13 @@ async def on_message(message: cl.Message) -> None:
             # running Chainlit process (avoids 'name not defined' errors).
             from skills.transcript_breakdown import breakdown_chinese_transcript
 
-            result = await asyncio.to_thread(breakdown_chinese_transcript, raw)
+            hsk_level = cl.user_session.get("hsk_level") or None
+            result = await asyncio.to_thread(
+                breakdown_chinese_transcript,
+                raw,
+                use_llm=True,
+                hsk_level=hsk_level,
+            )
             await cl.Message(content=result).send()
         except Exception as exc:
             logger.exception("Transcript breakdown failed")

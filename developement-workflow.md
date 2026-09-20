@@ -94,11 +94,15 @@ For every new capability or component (e.g., setting up the `AgentExecutor`, wir
 | HSK level selector | P1 | ✅ `AskActionMessage` at chat start; `level: beginner/intermediate` fallback |
 | ~~Deployment (Docker)~~ | — | ✅ Done in Sprint 1 |
 
-### 🔜 Sprint 3 — P2 (stretch)
-- User authentication (Chainlit OAuth)
-- Session persistence across server restarts
-- Quiz / flashcard tool
-- Pronunciation feedback (TTS)
+### 🧪 Sprint 3 — P2 (active — QA test drafting)
+| Story | Priority | Acceptance criteria (QA review) |
+|-------|----------|----------------------------------|
+| Session persistence across restarts | P2 | `CHECKPOINT_DB_PATH` uses durable SQLite when `langgraph-checkpoint-sqlite` is installed; same `thread_id` reloads message history after a new agent instance; documented in README |
+| User authentication (Chainlit OAuth) | P2 | Optional OAuth via env (`OAUTH_*`); `@cl.oauth_callback` binds `cl.user_session` user id; unauthenticated access blocked when auth enabled; tests mock provider payload |
+| Quiz / flashcard tool | P2 | LangChain tool generates MCQ from HSK level + question count; grades answers with score + per-question feedback; no live LLM in unit tests |
+| Pronunciation feedback (TTS) | P2 | Tool or helper returns tone-marked phrase + optional audio payload from mocked TTS client; validates empty input and length limits |
+
+**QA gate (current phase):** Tests under `tests/test_session_persistence.py`, `tests/test_auth.py`, `tests/test_quiz_tool.py`, and `tests/test_pronunciation_tts.py` must be green or explicitly skipped until SWE lands the feature module.
 
 ---
 
